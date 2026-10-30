@@ -1,0 +1,699 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Трекер Курения</title>
+<style>
+  :root {
+    --bg: #050505;
+    --surface: #121212;
+    --surface-light: #1a1a1a;
+    --border: #262626;
+    --text-main: #ededed;
+    --text-mute: #888888;
+    
+    --accent: #6ee7b7;
+    --accent-dark: #0f2a24;
+    --money: #fcd34d;
+    --danger: #f87171;
+    --danger-bg: #2a1212;
+    --fire: #ff7b00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    padding-bottom: 90px;
+    overflow-x: hidden;
+  }
+
+  .wrap { max-width: 600px; margin: 0 auto; padding: 20px 16px; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(5, 5, 5, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+  }
+  .head-inner { max-width: 600px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+  
+  .logo { 
+    font-size: 16px; font-weight: 700; letter-spacing: -0.5px; 
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .logo svg { width: 20px; height: 20px; fill: var(--accent); }
+  
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  /* Fire in Header */
+  .header-fire {
+    display: flex; align-items: center; gap: 4px; 
+    color: var(--fire); font-weight: 800; font-size: 16px;
+  }
+  .header-fire svg { width: 22px; height: 22px; fill: currentColor; }
+  .header-fire span { color: #fff; }
+
+  .nick-btn {
+    background: var(--surface-light); border: 1px solid var(--border); color: var(--text-mute);
+    padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: 0.2s; white-space: nowrap;
+  }
+  .nick-btn:active { background: var(--border); color: var(--text-main); }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 24px;
+    background: var(--surface); padding: 4px; border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1; padding: 12px 4px; border: none;
+    background: transparent; color: var(--text-mute); font-size: 13px; font-weight: 600;
+    border-radius: 12px; cursor: pointer; transition: 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .tab svg { width: 20px; height: 20px; fill: currentColor; }
+  .tab.active { background: var(--surface-light); color: var(--accent); }
+  .tab:not(.active):hover { color: var(--text-main); }
+
+  .section { display: none; }
+  .section.active { display: block; animation: fade 0.3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 20px; margin-bottom: 16px;
+  }
+  .card-title { font-size: 12px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-weight: 600; }
+
+  /* Counter */
+  .counter-card { 
+    background: linear-gradient(180deg, #0b1411 0%, #060a08 100%); 
+    border-color: #15251d; 
+    position: relative; 
+    overflow: hidden;
+    padding: 24px 20px;
+  }
+  .counter-card svg.bg-tree {
+    position: absolute; right: -20px; bottom: -20px; width: 140px; height: 140px;
+    opacity: 0.05; pointer-events: none;
+  }
+  .counter-label { font-size: 14px; color: var(--accent); font-weight: 600; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .counter-big { font-size: 52px; font-weight: 800; line-height: 1; letter-spacing: -2px; color: #fff; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px; }
+  .counter-big span { font-size: 16px; font-weight: 600; color: var(--text-mute); letter-spacing: 0; margin-right: 8px; }
+
+  /* Short Stats inside Counter */
+  .short-stats {
+    display: flex; gap: 16px; margin-top: 16px; padding-top: 16px;
+    border-top: 1px solid #15251d; font-size: 13px; color: var(--text-mute);
+    flex-wrap: wrap;
+  }
+  .short-stats span { display: flex; align-items: center; gap: 4px; }
+  .short-stats b { color: var(--text-main); font-weight: 600; }
+
+  .start-btn {
+    width: 100%; padding: 18px; border: none; border-radius: 14px;
+    background: var(--accent); color: #000; font-size: 16px; font-weight: 700;
+    cursor: pointer; margin-top: 12px; transition: 0.2s;
+  }
+  .start-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  /* Detailed Stats in Tracker */
+  .stats-row { display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .stats-row:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+  .stats-label { color: var(--text-mute); font-size: 14px; }
+  .stats-val { color: var(--text-main); font-weight: 600; font-size: 14px; }
+
+  /* Money */
+  .money-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .money-big { font-size: 28px; font-weight: 800; color: var(--money); }
+  .money-big small { font-size: 16px; color: var(--text-mute); font-weight: 500; }
+  
+  .input-group { display: flex; gap: 8px; }
+  .input-inline {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
+    padding: 12px 14px; border-radius: 12px; font-size: 14px; flex: 1; text-align: center;
+  }
+  .input-inline:focus { outline: none; border-color: var(--accent); }
+  select.input-inline { appearance: none; -webkit-appearance: none; cursor: pointer; }
+
+  /* Crave Button */
+  .crave-btn {
+    width: 100%; padding: 24px; border: 1px solid #4a1c1c; border-radius: 20px;
+    background: linear-gradient(180deg, #2a1212 0%, #1a0a0a 100%);
+    color: var(--danger); font-size: 18px; font-weight: 800; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; transition: 0.2s;
+  }
+  .crave-btn svg { width: 32px; height: 32px; fill: currentColor; }
+  .crave-btn:active { transform: scale(0.98); background: #3a1515; }
+
+  /* Modals */
+  .modal {
+    position: fixed; inset: 0; z-index: 100; display: none;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 24px;
+    padding: 24px; width: 100%; max-width: 400px;
+    animation: modalUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes modalUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  
+  .modal-box h2 { font-size: 20px; margin-bottom: 8px; text-align: center; }
+  .modal-box p { color: var(--text-mute); font-size: 14px; margin-bottom: 20px; text-align: center; line-height: 1.5; }
+
+  /* Breathing Circle */
+  .breath-wrap { display: flex; justify-content: center; margin: 30px 0; }
+  .breath-circle {
+    width: 160px; height: 160px; border-radius: 50%;
+    background: radial-gradient(circle, #1f3a31 0%, #0a1411 100%);
+    border: 2px solid var(--accent);
+    animation: breathe 12s ease-in-out infinite;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-weight: 700; font-size: 15px; letter-spacing: 1px;
+    box-shadow: 0 0 30px rgba(110, 231, 183, 0.1);
+  }
+  @keyframes breathe {
+    0% { transform: scale(0.6); box-shadow: 0 0 0px rgba(110, 231, 183, 0); }
+    33% { transform: scale(1); box-shadow: 0 0 40px rgba(110, 231, 183, 0.2); }
+    66% { transform: scale(1); box-shadow: 0 0 40px rgba(110, 231, 183, 0.2); }
+    100% { transform: scale(0.6); box-shadow: 0 0 0px rgba(110, 231, 183, 0); }
+  }
+  .breath-timer { font-size: 42px; font-weight: 800; color: var(--text-main); margin: 10px 0; text-align: center; letter-spacing: 2px; }
+
+  /* Forms */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; color: var(--text-mute); margin-bottom: 8px; font-weight: 500; }
+  .field input, .field textarea, .field select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text-main);
+    padding: 14px; border-radius: 14px; font-size: 15px; font-family: inherit; transition: 0.2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+  .field select { appearance: none; -webkit-appearance: none; }
+
+  .btn { padding: 16px; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
+  .btn-green { background: var(--accent); color: #000; }
+  .btn-green:active { transform: scale(0.98); }
+  .btn-ghost { background: var(--surface-light); color: var(--text-main); border: 1px solid var(--border); }
+  .btn-ghost:active { background: var(--border); }
+  .btn-red { background: var(--danger-bg); color: var(--danger); border: 1px solid #4a1c1c; margin-top: 24px; }
+
+  /* Lists */
+  .log-item { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-time { color: var(--text-mute); font-size: 12px; margin-top: 4px; }
+  .empty { color: var(--text-mute); font-size: 14px; text-align: center; padding: 20px 0; }
+
+  /* Toast Notifications */
+  #toastContainer {
+    position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 400px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+    padding: 0 16px;
+  }
+  .toast {
+    background: var(--surface-light); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    display: flex; align-items: center; gap: 12px; pointer-events: auto;
+    transform: translateY(-150%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast.show { transform: translateY(0); }
+  .toast.hide { transform: translateY(-150%); }
+  .toast-text { flex: 1; }
+  .toast-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .toast-desc { font-size: 12px; color: var(--text-mute); }
+  .toast-close { background: none; border: none; color: var(--text-mute); cursor: pointer; padding: 4px; }
+
+  @media (max-width: 380px) {
+    .logo span { display: none; }
+    .counter-big { font-size: 42px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toastContainer"></div>
+
+<header>
+  <div class="head-inner">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" opacity="0.3"/><path d="M12 4c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm1-10h-2v4h2V8zm0 6h-2v2h2v-2z"/></svg>
+      <span>Трекер Курения</span>
+    </div>
+    
+    <div class="header-right">
+      <div class="header-fire" id="headerFire" style="display:none;">
+        <svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <span id="headerFireNum">0</span>
+      </div>
+      <button class="nick-btn" id="nickBtn">Профиль</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="progress">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Прогресс
+    </button>
+    <button class="tab" data-tab="crave">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      Желание
+    </button>
+    <button class="tab" data-tab="tracker">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      Записи
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="section active" id="progress">
+    
+    <div class="card counter-card">
+      <svg class="bg-tree" viewBox="0 0 100 100"><path d="M50 10 L60 30 L80 40 L60 50 L70 70 L50 60 L30 70 L40 50 L20 40 L40 30 Z" fill="currentColor"/><path d="M45 60 L45 90 L55 90 L55 60 Z" fill="currentColor"/></svg>
+      <div id="counterContent"></div>
+      
+      <div class="short-stats" id="shortStats" style="display:none;">
+        <span>Желаний: <b id="statTotalShort">0</b></span>
+        <span>Ср. сила: <b id="statAvgShort">0</b></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Сэкономлено</div>
+      <div class="money-row">
+        <div class="money-big" id="moneyBig">0 <small>₽</small></div>
+      </div>
+      <div class="input-group">
+        <select id="spendPeriod" class="input-inline">
+          <option value="day">В день</option>
+          <option value="month">В месяц</option>
+        </select>
+        <input type="number" id="dailySpend" class="input-inline" placeholder="Сумма" min="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- CRAVE -->
+  <div class="section" id="crave">
+    <div class="card" style="text-align:center; padding: 30px 20px;">
+      <div style="font-size:18px; font-weight:700; margin-bottom:12px; color:var(--text-main);">Сильное желание?</div>
+      <p style="font-size:14px; color:var(--text-mute); margin-bottom:24px; line-height:1.5;">
+        Нажми на кнопку. Желание длится в среднем 5 минут. Давай переждем его вместе.
+      </p>
+      <button class="crave-btn" id="craveBtn">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+        ХОЧУ КУРИТЬ
+      </button>
+    </div>
+  </div>
+
+  <!-- TRACKER -->
+  <div class="section" id="tracker">
+    
+    <!-- Статистика перенесена сюда (наверх) -->
+    <div class="card" id="analyticsCard" style="display:none;">
+      <div class="card-title">Статистика желаний</div>
+      <div class="stats-row">
+        <span class="stats-label">Всего записано</span>
+        <span class="stats-val" id="statTotal">0</span>
+      </div>
+      <div class="stats-row">
+        <span class="stats-label">Средняя сила</span>
+        <span class="stats-val" id="statAvg">0/10</span>
+      </div>
+      <div class="stats-row">
+        <span class="stats-label">Чаще всего возникает</span>
+        <span class="stats-val" id="statTime">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Новая запись</div>
+      <div class="field">
+        <label>Что было?</label>
+        <input type="text" id="craveNote" placeholder="перемена, стресс, за компанию...">
+      </div>
+      <div class="field">
+        <label>Сила желания</label>
+        <select id="craveLevel">
+          <option value="3">Слабое (3)</option>
+          <option value="5" selected>Среднее (5)</option>
+          <option value="7">Сильное (7)</option>
+          <option value="10">Очень сильное (10)</option>
+        </select>
+      </div>
+      <button class="btn btn-green" id="addCrave">Записать</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Мои записи</div>
+      <div id="craveList"><div class="empty">Пока пусто</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: настройки -->
+<div class="modal" id="settingsModal">
+  <div class="modal-box">
+    <h2>Профиль</h2>
+    <p>Всё хранится только в твоём браузере.</p>
+    <div class="field">
+      <label>Твой ник</label>
+      <input type="text" id="nickInput" placeholder="как тебя звать?" maxlength="20">
+    </div>
+    <div class="field">
+      <label>Когда бросил</label>
+      <input type="datetime-local" id="quitDateInput">
+    </div>
+    <button class="btn btn-green" id="saveSettings">Сохранить</button>
+    <button class="btn btn-red" id="resetAll">Сбросить весь прогресс</button>
+    <button class="btn btn-ghost" style="margin-top:12px;" id="closeSettings">Закрыть</button>
+  </div>
+</div>
+
+<!-- Modal: накрывает -->
+<div class="modal" id="craveModal">
+  <div class="modal-box">
+    <h2>Дыши</h2>
+    <p>Вдох 4 сек. Задержка 4. Выдох 4.</p>
+    <div class="breath-wrap">
+      <div class="breath-circle" id="breathCircle">ДЫШИ</div>
+    </div>
+    <div class="breath-timer" id="craveTimer">5:00</div>
+    <p style="font-size:13px; margin-bottom:0;" id="craveTip">Пока ждёшь, попей воды или походи.</p>
+    <button class="btn btn-ghost" style="margin-top:20px;" id="craveClose">Закрыть</button>
+  </div>
+</div>
+
+<script>
+  const KEY = 'nepar_v5';
+  let state = { 
+    quitDate: null, 
+    dailySpend: 0, 
+    spendPeriod: 'day', 
+    cravings: [], 
+    nick: 'аноним', 
+    cravingSurvived: 0,
+    shownMilestones: []
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) state = Object.assign(state, JSON.parse(raw));
+    } catch(e) {}
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function elapsedMs() { return state.quitDate ? Math.max(0, Date.now() - new Date(state.quitDate).getTime()) : 0; }
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return pad(d.getDate()) + '.' + pad(d.getMonth()+1) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  // Tabs
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Render Counter & Stats
+  function renderCounter() {
+    const el = document.getElementById('counterContent');
+    const headerFire = document.getElementById('headerFire');
+    const shortStats = document.getElementById('shortStats');
+    
+    if (!state.quitDate) {
+      headerFire.style.display = 'none';
+      shortStats.style.display = 'none';
+      el.innerHTML = `
+        <div class="counter-label">Ты ещё не начал</div>
+        <div class="counter-big" style="font-size:28px; margin-bottom:10px;">Готов?</div>
+        <p style="font-size:14px; color:var(--text-mute); line-height:1.5;">Нажми кнопку и счётчик запустится.</p>
+        <button class="start-btn" id="startBtn">Я бросил. Поехали</button>
+      `;
+      document.getElementById('startBtn').onclick = () => {
+        state.quitDate = new Date().toISOString();
+        save(); renderAll();
+        document.getElementById('nickBtn').click();
+      };
+      return;
+    }
+    
+    headerFire.style.display = 'flex';
+    const ms = elapsedMs();
+    const days = Math.floor(ms / 86400000);
+    const hours = Math.floor((ms % 86400000) / 3600000);
+    const mins = Math.floor((ms % 3600000) / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+
+    document.getElementById('headerFireNum').textContent = days;
+
+    el.innerHTML = `
+      <div class="counter-label">Ты не куришь уже</div>
+      <div class="counter-big">
+        ${days}<span>дн</span> ${pad(hours)}<span>ч</span> ${pad(mins)}<span>мин</span> ${pad(secs)}<span>сек</span>
+      </div>
+    `;
+
+    if (state.cravings.length > 0) {
+      shortStats.style.display = 'flex';
+      document.getElementById('statTotalShort').textContent = state.cravings.length;
+      const sum = state.cravings.reduce((acc, c) => acc + c.level, 0);
+      document.getElementById('statAvgShort').textContent = (sum / state.cravings.length).toFixed(1) + '/10';
+    } else {
+      shortStats.style.display = 'none';
+    }
+
+    const analyticsCard = document.getElementById('analyticsCard');
+    if (state.cravings.length > 0) {
+      analyticsCard.style.display = 'block';
+      document.getElementById('statTotal').textContent = state.cravings.length;
+      
+      const sum = state.cravings.reduce((acc, c) => acc + c.level, 0);
+      document.getElementById('statAvg').textContent = (sum / state.cravings.length).toFixed(1) + '/10';
+
+      const hoursMap = {};
+      state.cravings.forEach(c => {
+        const h = new Date(c.time).getHours();
+        hoursMap[h] = (hoursMap[h] || 0) + 1;
+      });
+      let maxH = null, maxCount = 0;
+      for (const h in hoursMap) {
+        if (hoursMap[h] > maxCount) { maxCount = hoursMap[h]; maxH = parseInt(h); }
+      }
+      
+      if (maxH !== null) {
+        let timeStr = '';
+        if (maxH >= 6 && maxH < 12) timeStr = 'утром (' + pad(maxH) + ':00 - ' + pad(maxH+2) + ':00)';
+        else if (maxH >= 12 && maxH < 18) timeStr = 'днем (' + pad(maxH) + ':00 - ' + pad(maxH+2) + ':00)';
+        else if (maxH >= 18 && maxH < 23) timeStr = 'вечером (' + pad(maxH) + ':00 - ' + pad(maxH+2) + ':00)';
+        else timeStr = 'ночью (' + pad(maxH) + ':00 - ' + pad(maxH+2) + ':00)';
+        document.getElementById('statTime').textContent = timeStr;
+      }
+    } else {
+      analyticsCard.style.display = 'none';
+    }
+  }
+
+  // Money
+  function renderMoney() {
+    document.getElementById('dailySpend').value = state.dailySpend || '';
+    document.getElementById('spendPeriod').value = state.spendPeriod || 'day';
+    
+    const daily = state.spendPeriod === 'month' ? (state.dailySpend / 30) : state.dailySpend;
+    const money = Math.floor((elapsedMs() / 86400000) * (daily || 0));
+    document.getElementById('moneyBig').innerHTML = money.toLocaleString('ru-RU') + ' <small>₽</small>';
+  }
+  document.getElementById('dailySpend').addEventListener('input', (e) => {
+    state.dailySpend = parseInt(e.target.value) || 0; save(); renderMoney();
+  });
+  document.getElementById('spendPeriod').addEventListener('change', (e) => {
+    state.spendPeriod = e.target.value; save(); renderMoney();
+  });
+
+  // Health Milestones (Toasts)
+  const MILESTONES = [
+    { id: 'm20m', ms: 20 * 60000, title: 'Пульс нормализуется', desc: 'Прошло 20 минут без никотина.' },
+    { id: 'm12h', ms: 12 * 3600000, title: 'Кровь очищается', desc: 'Уровень угарного газа в крови приходит в норму.' },
+    { id: 'm24h', ms: 24 * 3600000, title: 'Снижается риск инфаркта', desc: 'Прошел 1 день. Сердце скажет спасибо.' },
+    { id: 'm48h', ms: 48 * 3600000, title: 'Вкус и запах', desc: 'Рецепторы начинают восстанавливаться.' },
+    { id: 'm72h', ms: 72 * 3600000, title: 'Дышать легче', desc: 'Бронхи начинают расслабляться. Дыхание улучшается.' },
+    { id: 'm14d', ms: 14 * 86400000, title: 'Кровообращение', desc: 'Улучшается циркуляция крови, легче ходить.' },
+    { id: 'm30d', ms: 30 * 86400000, title: 'Лёгкие работают лучше', desc: 'Объём лёгких увеличивается, кашель уходит.' },
+    { id: 'm90d', ms: 90 * 86400000, title: 'Функция лёгких растёт', desc: 'Прошло 3 месяца. Организм полностью адаптировался.' },
+    { id: 'm365d', ms: 365 * 86400000, title: 'Риск болезней сердца вдвое ниже', desc: 'Прошел год. Это огромная победа.' }
+  ];
+
+  function checkMilestones() {
+    if (!state.quitDate) return;
+    const ms = elapsedMs();
+    const unreached = MILESTONES.filter(m => ms >= m.ms && !state.shownMilestones.includes(m.id));
+    
+    if (unreached.length > 0) {
+      const latest = unreached[unreached.length - 1];
+      showToast(latest.title, latest.desc);
+      state.shownMilestones.push(...unreached.map(m => m.id));
+      save();
+    }
+  }
+
+  function showToast(title, desc) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    toast.innerHTML = `
+      <div style="width:36px; height:36px; border-radius:50%; background:var(--accent-dark); display:flex; align-items:center; justify-content:center; color:var(--accent); flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      </div>
+      <div class="toast-text">
+        <div class="toast-title">${title}</div>
+        <div class="toast-desc">${desc}</div>
+      </div>
+      <button class="toast-close">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    `;
+    
+    container.appendChild(toast);
+
+    let startY = 0;
+    toast.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, {passive: true});
+    toast.addEventListener('touchend', e => {
+      const endY = e.changedTouches[0].clientY;
+      if (startY - endY > 30) { 
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 400);
+      }
+    }, {passive: true});
+
+    toast.querySelector('.toast-close').onclick = () => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 400);
+    };
+
+    setTimeout(() => toast.classList.add('show'), 50);
+
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.add('hide');
+        setTimeout(() => toast.remove(), 400);
+      }
+    }, 6000);
+  }
+
+  // Craving Modal
+  let craveInterval = null;
+  document.getElementById('craveBtn').onclick = () => {
+    document.getElementById('craveModal').classList.add('show');
+    startCraveTimer();
+  };
+  document.getElementById('craveClose').onclick = () => {
+    clearInterval(craveInterval);
+    document.getElementById('craveModal').classList.remove('show');
+  };
+
+  function startCraveTimer() {
+    clearInterval(craveInterval);
+    let left = 5 * 60;
+    const timerEl = document.getElementById('craveTimer');
+    const tipEl = document.getElementById('craveTip');
+    const circleEl = document.getElementById('breathCircle');
+
+    function tick() {
+      timerEl.textContent = Math.floor(left / 60) + ':' + pad(left % 60);
+      if (left <= 0) {
+        clearInterval(craveInterval);
+        timerEl.textContent = '✓'; 
+        circleEl.textContent = 'МОЛОДЕЦ'; 
+        circleEl.style.animation = 'none';
+        tipEl.textContent = 'Желание прошло. Ты справился.'; return;
+      }
+      left--;
+    }
+    tick(); craveInterval = setInterval(tick, 1000);
+  }
+
+  // Tracker
+  document.getElementById('addCrave').onclick = () => {
+    const note = document.getElementById('craveNote').value.trim();
+    if (!note) return;
+    state.cravings.unshift({ note, level: parseInt(document.getElementById('craveLevel').value), time: new Date().toISOString() });
+    save(); document.getElementById('craveNote').value = ''; renderCravings(); renderCounter();
+  };
+  function renderCravings() {
+    const list = document.getElementById('craveList');
+    if (!state.cravings.length) { list.innerHTML = '<div class="empty">Пока пусто</div>'; return; }
+    list.innerHTML = state.cravings.slice(0, 30).map(c => `
+      <div class="log-item">
+        <div>
+          <div style="font-weight:500;">${escapeHtml(c.note)}</div>
+          <div class="log-time">${fmtTime(c.time)}</div>
+        </div>
+        <div style="color:var(--danger); font-weight:700;">${c.level}/10</div>
+      </div>
+    `).join('');
+  }
+
+  // Settings
+  const settingsModal = document.getElementById('settingsModal');
+  document.getElementById('nickBtn').onclick = () => {
+    document.getElementById('nickInput').value = state.nick || '';
+    if (state.quitDate) {
+      const d = new Date(state.quitDate);
+      document.getElementById('quitDateInput').value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    } else {
+      document.getElementById('quitDateInput').value = '';
+    }
+    settingsModal.classList.add('show');
+  };
+  document.getElementById('closeSettings').onclick = () => settingsModal.classList.remove('show');
+  document.getElementById('saveSettings').onclick = () => {
+    state.nick = document.getElementById('nickInput').value.trim() || 'аноним';
+    const qd = document.getElementById('quitDateInput').value;
+    if (qd) state.quitDate = new Date(qd).toISOString();
+    save(); settingsModal.classList.remove('show'); renderAll();
+  };
+  document.getElementById('resetAll').onclick = () => {
+    if (!confirm('Точно сбросить весь прогресс?')) return;
+    state = { quitDate: null, dailySpend: 0, spendPeriod: 'day', cravings: [], nick: state.nick, cravingSurvived: 0, shownMilestones: [] };
+    save(); settingsModal.classList.remove('show'); renderAll();
+  };
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+  function renderAll() { 
+    renderCounter(); 
+    renderMoney(); 
+    renderCravings(); 
+    checkMilestones();
+  }
+
+  load(); renderAll();
+  
+  setInterval(() => { 
+    renderCounter(); 
+    renderMoney(); 
+    checkMilestones();
+  }, 1000);
+</script>
+</body>
+</html>
